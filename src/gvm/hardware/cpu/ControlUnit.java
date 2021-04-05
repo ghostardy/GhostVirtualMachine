@@ -31,16 +31,29 @@ public class ControlUnit {
     private OutputDevice output;
     private InputDevice input;
 
+    //Flags
+    boolean interruptted=false;
+
     public ControlUnit(){
     }
 
+    public void interrupt(InputDevice input){
+        this.input = input;
+        interruptted = true;
+    }
     public void execute(){
         while(true){
-            try {
-                Thread.sleep(1000);
-                System.out.println("CPU running");
-            }catch (Exception e) {
-                e.printStackTrace();
+            if (interruptted) {
+                input.enable();
+
+                interruptted = false;
+            }else {
+                try {
+                    Thread.sleep(1000);
+                    System.out.println("CPU running");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -99,5 +112,9 @@ public class ControlUnit {
 
     public void setInput(InputDevice input) {
         this.input = input;
+    }
+
+    public void setInterruptted(boolean interruptted) {
+        this.interruptted = interruptted;
     }
 }

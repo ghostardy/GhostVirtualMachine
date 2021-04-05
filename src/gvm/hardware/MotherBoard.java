@@ -19,7 +19,7 @@ public class MotherBoard {
     public void plugIn(){
         this.cpu = new CentralProcessingUnit(addressBus, dataBus);
         this.ram = new RandomAccessMemory(addressBus, dataBus);
-        this.input = new InputDevice();
+        this.input = new InputDevice(dataBus, cpu);
         this.output = new OutputDevice();
     }
 

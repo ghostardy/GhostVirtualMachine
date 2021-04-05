@@ -40,6 +40,11 @@ public class CentralProcessingUnit {
         cu.execute();
     }
 
+    public void interrupt(InputDevice input){
+        cu.setInput(input);
+        cu.setInterruptted(true);
+    }
+
     public void setMemoryAddressRegister(Register<String> memoryAddressRegister) {
         cu.setMemoryAddressRegister(memoryAddressRegister);
     }
