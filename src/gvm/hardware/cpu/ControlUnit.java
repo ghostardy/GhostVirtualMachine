@@ -1,12 +1,12 @@
 package gvm.hardware.cpu;
 
-import gvm.hardware.Bus;
-import gvm.hardware.InputDevice;
-import gvm.hardware.OutputDevice;
-import gvm.hardware.RandomAccessMemory;
-import jdk.internal.util.xml.impl.Input;
+import gvm.hardware.*;
+
+import java.util.HashMap;
 
 public class ControlUnit {
+    private HashMap<String, Bus<InputContorlCmd>> inputContorlBusList;
+
    //Registers for cu
     private Register<String> instructionRegister;
     private Register<String> instructionAddressRegister;
@@ -28,36 +28,110 @@ public class ControlUnit {
 
     //Devices
     private RandomAccessMemory ram;
-    private OutputDevice output;
-    private InputDevice input;
-
-    //Flags
-    boolean interruptted=false;
+    private HashMap<String, OutputDevice> outputList;
+    private HashMap<String, InputDevice> inputList;
+    private Disk disk;
 
     public ControlUnit(){
     }
 
-    public void interrupt(InputDevice input){
-        this.input = input;
-        interruptted = true;
-    }
     public void execute(){
+        instructionAddressRegister.set("0");
+        instructionRegister.set("0");
         while(true){
-            if (interruptted) {
-                input.enable();
-
-                interruptted = false;
-            }else {
-                try {
-                    Thread.sleep(1000);
-                    System.out.println("CPU running");
-                } catch (Exception e) {
-                    e.printStackTrace();
+            //If interrupted by input device
+            for (String deviceAddress : inputContorlBusList.keySet()){
+                if (inputContorlBusList.get(deviceAddress).getData() == InputContorlCmd.INTERRUPT) {
+                    inputList.get(deviceAddress).enable();
+                    //AX is used as data register
+                    AXRegister.set();
+                    inputContorlBusList.get(deviceAddress).setData(InputContorlCmd.CLEAR);
                 }
+            }
+
+            try {
+                loadInstruction();
+                executeInstruction();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
 
+    private void loadInstruction() throws InterruptedException{
+        instructionAddressRegister.enable();
+        //DX use as point register
+        DXRegister.set();
+        memoryAddressRegister.set();
+        ram.enable();
+        instructionRegister.set();
+        Thread.sleep(100);
+    }
+    private void executeInstruction(){
+        Instruction instruction = Instruction.valueOf(instructionRegister.enable());
+        switch (instruction) {
+            case $GVM_CMD_LOAD$:
+                //Set next instruction address
+                setNextAddress();
+                loadData();
+                aluTemporaryRegister.set();
+                setNextAddress();
+                instructionAddressRegister.set();
+                instructionRegister.turnOff();
+                break;
+            case $GVM_CMD_OUT$:
+                setNextAddress();
+                loadData();
+                //CX use as address register
+                CXRegister.set();
+                for (String key : outputList.keySet()){
+                    outputList.get(key).ready();
+                }
+                setNextAddress();
+                loadData();
+                for (String key : outputList.keySet()) {
+                    outputList.get(key).output();
+                    outputList.get(key).done();
+                }
+                setNextAddress();
+                instructionAddressRegister.set();
+                instructionRegister.turnOff();
+                break;
+            case $GVM_CMD_COMPARE$:
+                setNextAddress();
+                loadData();
+                alu.setOperation(Operation.COMPARE);
+                alu.calculate();
+                setNextAddress();
+                instructionAddressRegister.set();
+                instructionRegister.turnOff();
+                break;
+            case $GVM_CMD_JUMPIF_EQUAL$:
+                setNextAddress();
+                if (Flags.EQUAL == flagsRegister.enable()){
+                    loadData();
+                    DXRegister.set();
+                }else {
+                    setNextAddress();
+                    loadData();
+                }
+                instructionAddressRegister.set();
+                instructionRegister.turnOff();
+        }
+    }
+    private void loadData(){
+        DXRegister.enable();
+        memoryAddressRegister.set();
+        ram.enable();
+    }
+
+    private void setNextAddress(){
+        DXRegister.enable();
+        alu.setOperation(Operation.INC);
+        alu.calculate();
+        aluOutputRegister.enable();
+        DXRegister.set();
+    }
     public void setAlu(ArithmeticLogicUnit alu) {
         this.alu = alu;
     }
@@ -106,15 +180,29 @@ public class ControlUnit {
         this.ram = ram;
     }
 
-    public void setOutput(OutputDevice output) {
-        this.output = output;
+    public void setOutput(HashMap<String, OutputDevice> outputList) {
+        this.outputList = outputList;
     }
 
-    public void setInput(InputDevice input) {
-        this.input = input;
+    public void setInput(HashMap<String, InputDevice> inputList) {
+        this.inputList = inputList;
     }
 
-    public void setInterruptted(boolean interruptted) {
-        this.interruptted = interruptted;
+    public void setInputContorlBusList(HashMap<String, Bus<InputContorlCmd>> inputContorlBusList) {
+        this.inputContorlBusList = inputContorlBusList;
+    }
+
+    public void setDisk(Disk disk) {
+        this.disk = disk;
+    }
+
+    public void load(){
+        while (disk.hasNext()) {
+            disk.setNextAddress();
+            memoryAddressRegister.set();
+            disk.setNextData();
+            ram.set();
+        }
+        ram.trace();
     }
 }

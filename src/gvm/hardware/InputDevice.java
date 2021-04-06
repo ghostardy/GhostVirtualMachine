@@ -1,18 +1,23 @@
 package gvm.hardware;
 
-public class InputDevice {
-    String inputData;
-    Bus<String> dataBus;
-    CentralProcessingUnit cpu;
+import gvm.hardware.cpu.InputContorlCmd;
 
-    public InputDevice(Bus<String> dataBus, CentralProcessingUnit cpu) {
+public class InputDevice {
+    private String inputData;
+    private Bus<String> dataBus;
+    private Bus<InputContorlCmd> inputContorlBus;
+
+    public InputDevice() {
+    }
+
+    public void insert(Bus<String> dataBus, Bus<InputContorlCmd> inputContorlBus) {
         this.dataBus = dataBus;
-        this.cpu = cpu;
+        this.inputContorlBus = inputContorlBus;
     }
 
     public void input(String data){
         inputData = data;
-        cpu.interrupt(this);
+        inputContorlBus.setData(InputContorlCmd.INTERRUPT);
     }
 
     public void enable(){

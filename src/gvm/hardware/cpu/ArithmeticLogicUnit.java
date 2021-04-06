@@ -20,21 +20,29 @@ public class ArithmeticLogicUnit {
     }
 
     public void calculate(){
-        if (operation == Operation.ADD) {
-            String A = temporaryRegister.enable();
-            String B = dataBus.getData();
-            String out = new Integer(Integer.getInteger(A) + Integer.getInteger(B)).toString();
-            outputRegister.set(out);
-        }else if (operation == Operation.COMPARE) {
-            String A = temporaryRegister.enable();
-            String B = dataBus.getData();
-            if (Integer.getInteger(A) > Integer.getInteger(B)){
-                flagsRegister.set(Flags.LARGER);
-            }else if (Integer.getInteger(A) == Integer.getInteger(B)) {
-                flagsRegister.set(Flags.EQUAL);
-            }else{
-                flagsRegister.set(Flags.LESS);
-            }
+        String A;
+        String B;
+        switch (operation) {
+            case ADD:
+                A = temporaryRegister.enable();
+                B = dataBus.getData();
+                String out = new Integer(Integer.getInteger(A) + Integer.getInteger(B)).toString();
+                outputRegister.set(out);
+                break;
+            case COMPARE:
+                A = temporaryRegister.enable();
+                B = dataBus.getData();
+                if (Integer.getInteger(A) > Integer.getInteger(B)){
+                    flagsRegister.set(Flags.LARGER);
+                }else if (Integer.getInteger(A) == Integer.getInteger(B)) {
+                    flagsRegister.set(Flags.EQUAL);
+                }else{
+                    flagsRegister.set(Flags.LESS);
+                }
+                break;
+            case INC:
+                A = dataBus.getData();
+                outputRegister.set(new Integer(Integer.getInteger(A).intValue()+1).toString());
         }
     }
 

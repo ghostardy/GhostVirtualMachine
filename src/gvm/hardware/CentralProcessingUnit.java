@@ -1,21 +1,28 @@
 package gvm.hardware;
 
 import gvm.hardware.cpu.*;
+import jdk.internal.util.xml.impl.Input;
+
+import java.util.HashMap;
 
 public class CentralProcessingUnit {
     //Other Devices
-    private Bus<Integer> addressBus;
+    private Bus<String> addressBus;
     private Bus<String> dataBus;
+    private Bus<InputContorlCmd> inputContorlBus;
 
     //Contorl unit of cpu
     private ControlUnit cu;
     //Arithmetic Logic Unit of cpu
     private ArithmeticLogicUnit alu;
 
-    public CentralProcessingUnit(Bus<Integer>addressBus, Bus<String> dataBus) {
+    public CentralProcessingUnit(Bus<String>addressBus,
+                                 Bus<String> dataBus,
+                                 HashMap<String, Bus<InputContorlCmd>> inputContorlBusList) {
         //Busses
         this.addressBus = addressBus;
         this.dataBus = dataBus;
+        this.inputContorlBus = inputContorlBus;
         //Main components
         Register<String> aluOutputRegister = new Register<>(new Bus<>(), dataBus);
         Register<String> aluTemporaryRegister = new Register<>(dataBus, new Bus<>());
@@ -32,20 +39,28 @@ public class CentralProcessingUnit {
         cu.setDXRegister(new Register<>(dataBus, dataBus));
         cu.setInstructionRegister(new Register<>(dataBus, new Bus<>()));
         cu.setInstructionAddressRegister(new Register<>(dataBus, dataBus));
+        cu.setInputContorlBusList(inputContorlBusList);
+        cu.setFlagsRegister(flagsRegister);
     }
-    public void execute(RandomAccessMemory ram, InputDevice input, OutputDevice output){
+    public void insert(RandomAccessMemory ram, HashMap<String, InputDevice> inputList, HashMap<String, OutputDevice> outputList) {
         cu.setRam(ram);
-        cu.setInput(input);
-        cu.setOutput(output);
-        cu.execute();
+        cu.setInput(inputList);
+        cu.setOutput(outputList);
+        cu.setRam(ram);
     }
-
-    public void interrupt(InputDevice input){
-        cu.setInput(input);
-        cu.setInterruptted(true);
+    public void execute(){
+        cu.execute();
     }
 
     public void setMemoryAddressRegister(Register<String> memoryAddressRegister) {
         cu.setMemoryAddressRegister(memoryAddressRegister);
+    }
+
+    public void setDisk(Disk disk) {
+        cu.setDisk(disk);
+    }
+
+    public void load() {
+        cu.load();
     }
 }
