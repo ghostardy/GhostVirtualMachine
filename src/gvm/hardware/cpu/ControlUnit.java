@@ -35,86 +35,174 @@ public class ControlUnit {
     public ControlUnit(){
     }
 
-    public void execute(){
+    public void execute() throws InterruptedException{
         instructionAddressRegister.set("0");
         instructionRegister.set("0");
+        AXRegister.set("0");
+        BXRegister.set("0");
+        CXRegister.set("0");
+        DXRegister.set("0");
         while(true){
+            Thread.sleep(20);
             //If interrupted by input device
+            Boolean needWait = false;
             for (String deviceAddress : inputContorlBusList.keySet()){
-                if (inputContorlBusList.get(deviceAddress).getData() == InputContorlCmd.INTERRUPT) {
+                InputContorlCmd inputCmd = inputContorlBusList.get(deviceAddress).getData();
+                if (inputCmd == InputContorlCmd.INTERRUPT) {
                     inputList.get(deviceAddress).enable();
                     //AX is used as data register
                     AXRegister.set();
                     inputContorlBusList.get(deviceAddress).setData(InputContorlCmd.CLEAR);
+                    needWait = false;
+                }else if (inputCmd == InputContorlCmd.INPUT) {
+                    System.out.println("Waiting for inputting " + deviceAddress);
+                    needWait = true;
                 }
             }
-
-            try {
+            if (!needWait) {
                 loadInstruction();
                 executeInstruction();
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
     }
 
-    private void loadInstruction() throws InterruptedException{
+    private void loadInstruction(){
         instructionAddressRegister.enable();
         //DX use as point register
         DXRegister.set();
         memoryAddressRegister.set();
         ram.enable();
         instructionRegister.set();
-        Thread.sleep(100);
     }
     private void executeInstruction(){
-        Instruction instruction = Instruction.valueOf(instructionRegister.enable());
-        switch (instruction) {
-            case $GVM_CMD_LOAD$:
+        String instructionString = instructionRegister.enable();
+        //System.out.println("executing:"+instructionString);
+        if (null == instructionString) {
+            setNextAddress();
+            instructionAddressRegister.set();
+            return;
+        }
+        switch (instructionString) {
+            case "$GVM_CMD_LOAD$":
                 //Set next instruction address
                 setNextAddress();
                 loadData();
+                //Ready for output
+                BXRegister.set();
+                //Ready for calculation
                 aluTemporaryRegister.set();
                 setNextAddress();
                 instructionAddressRegister.set();
                 instructionRegister.turnOff();
                 break;
-            case $GVM_CMD_OUT$:
+            case "$GVM_CMD_IN$":
+                //Get Device address
                 setNextAddress();
                 loadData();
                 //CX use as address register
                 CXRegister.set();
-                for (String key : outputList.keySet()){
-                    outputList.get(key).ready();
-                }
-                setNextAddress();
-                loadData();
-                for (String key : outputList.keySet()) {
-                    outputList.get(key).output();
-                    outputList.get(key).done();
-                }
+                instructionRegister.set();
+                String inputDeviceAddress = instructionRegister.enable();
+                inputContorlBusList.get(inputDeviceAddress).setData(InputContorlCmd.INPUT);
                 setNextAddress();
                 instructionAddressRegister.set();
                 instructionRegister.turnOff();
                 break;
-            case $GVM_CMD_COMPARE$:
+            case "$GVM_CMD_OUT$":
+                //Get Device address
                 setNextAddress();
                 loadData();
+                //CX use as address register
+                CXRegister.set();
+                for (String key : outputList.keySet()) {
+                    outputList.get(key).ready();
+                }
+                //Output Data stored in BXRegister
+                BXRegister.enable();
+                for (String key : outputList.keySet()) {
+                    outputList.get(key).output();
+                    outputList.get(key).done();
+                }
+                BXRegister.set("0");
+                //Execution complete, load next instruction
+                setNextAddress();
+                instructionAddressRegister.set();
+                instructionRegister.turnOff();
+                break;
+            case "$GVM_CMD_COMPARE$":
+                AXRegister.enable();
                 alu.setOperation(Operation.COMPARE);
                 alu.calculate();
                 setNextAddress();
                 instructionAddressRegister.set();
                 instructionRegister.turnOff();
                 break;
-            case $GVM_CMD_JUMPIF_EQUAL$:
+            case "$GVM_CMD_JUMPIF_EQUAL$":
                 setNextAddress();
-                if (Flags.EQUAL == flagsRegister.enable()){
+                if (Flags.EQUAL == flagsRegister.enable()) {
                     loadData();
-                    DXRegister.set();
                 }else {
                     setNextAddress();
-                    loadData();
+                    DXRegister.set();
                 }
+                instructionAddressRegister.set();
+                flagsRegister.turnOff();
+                instructionRegister.turnOff();
+                break;
+            case "$GVM_CMD_JUMPIF_GREATER$":
+                setNextAddress();
+                if (Flags.GREATER == flagsRegister.enable()) {
+                    loadData();
+                }else {
+                    setNextAddress();
+                    DXRegister.set();
+                }
+                instructionAddressRegister.set();
+                flagsRegister.turnOff();
+                instructionRegister.turnOff();
+                break;
+            case "$GVM_CMD_JUMPIF_LESS$":
+                setNextAddress();
+                if (Flags.LESS == flagsRegister.enable()) {
+                    loadData();
+                }else {
+                    setNextAddress();
+                    DXRegister.set();
+                }
+                instructionAddressRegister.set();
+                flagsRegister.turnOff();
+                instructionRegister.turnOff();
+                break;
+            case "$GVM_CMD_JUMP$":
+                setNextAddress();
+                loadData();
+                instructionAddressRegister.set();
+                //System.out.println("Jump");
+                instructionRegister.turnOff();
+                break;
+            case "$GVM_CMD_SET$":
+                setNextAddress();
+                loadData();
+                instructionRegister.set();
+                String registerName = instructionRegister.enable();
+                if ("AX" == registerName){
+                    setNextAddress();
+                    loadData();
+                    AXRegister.set();
+                }else if ("BX" == registerName) {
+                    setNextAddress();
+                    loadData();
+                    BXRegister.set();
+                }
+                setNextAddress();
+                instructionAddressRegister.set();
+                instructionRegister.turnOff();
+                break;
+
+            default:
+                System.out.println("Unknown instruction [" + instructionString + "]");
+                //Next address handled as instruction
+                setNextAddress();
                 instructionAddressRegister.set();
                 instructionRegister.turnOff();
         }
@@ -203,6 +291,6 @@ public class ControlUnit {
             disk.setNextData();
             ram.set();
         }
-        ram.trace();
+        //ram.trace();
     }
 }

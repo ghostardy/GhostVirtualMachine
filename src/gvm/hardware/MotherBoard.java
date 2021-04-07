@@ -51,7 +51,7 @@ public class MotherBoard {
 
     public void powerOn(){
         cpu.load();
-        //cpu.execute();
+        cpu.execute();
     }
 
     public HashMap<String, InputDevice> getInputList() {

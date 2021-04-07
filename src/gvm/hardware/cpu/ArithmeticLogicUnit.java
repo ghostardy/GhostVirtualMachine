@@ -32,9 +32,9 @@ public class ArithmeticLogicUnit {
             case COMPARE:
                 A = temporaryRegister.enable();
                 B = dataBus.getData();
-                if (Integer.getInteger(A) > Integer.getInteger(B)){
-                    flagsRegister.set(Flags.LARGER);
-                }else if (Integer.getInteger(A) == Integer.getInteger(B)) {
+                if (Integer.parseInt(A) > Integer.parseInt(B)){
+                    flagsRegister.set(Flags.GREATER);
+                }else if (Integer.parseInt(A) == Integer.parseInt(B)) {
                     flagsRegister.set(Flags.EQUAL);
                 }else{
                     flagsRegister.set(Flags.LESS);
@@ -42,7 +42,7 @@ public class ArithmeticLogicUnit {
                 break;
             case INC:
                 A = dataBus.getData();
-                outputRegister.set(new Integer(Integer.getInteger(A).intValue()+1).toString());
+                outputRegister.set(String.valueOf(Integer.parseInt(A)+1));
         }
     }
 

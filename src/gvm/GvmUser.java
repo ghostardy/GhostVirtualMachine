@@ -7,8 +7,12 @@ public class GvmUser implements Runnable {
     @Override
     public void run() {
         for(int i=0;i<100;i++) {
-            input.input("Green");
             try {
+                input.input("1"); //Green light on
+                Thread.sleep(2000);
+                input.input("2");//Yellow light on
+                Thread.sleep(2000);
+                input.input("3");//Error light on
                 Thread.sleep(2000);
             }catch (Exception e) {
                 e.printStackTrace();

@@ -12,7 +12,7 @@ public class OutputDevice {
         this.dataBus = dataBus;
     }
     public void output(){
-        System.out.println(dataBus.getData());
+        System.out.print("{" + dataBus.getData() + "}");
     }
     public void ready(){
         if (dataBus.getData().equals(deviceAddress)) {

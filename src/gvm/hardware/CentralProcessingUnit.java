@@ -49,7 +49,11 @@ public class CentralProcessingUnit {
         cu.setRam(ram);
     }
     public void execute(){
-        cu.execute();
+        try {
+            cu.execute();
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void setMemoryAddressRegister(Register<String> memoryAddressRegister) {

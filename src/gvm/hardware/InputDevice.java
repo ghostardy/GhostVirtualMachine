@@ -15,6 +15,7 @@ public class InputDevice {
         this.inputContorlBus = inputContorlBus;
     }
 
+    //Called by Computer User
     public void input(String data){
         inputData = data;
         inputContorlBus.setData(InputContorlCmd.INTERRUPT);
